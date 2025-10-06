@@ -17,9 +17,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
+    "@types/aws-lambda": "^8.10.155",
     "@types/jest": "^29.5.14",
     "@types/node": "22.7.9",
     "aws-cdk": "2.1016.0",
+    "esbuild": "^0.25.10",
     "eslint": "^9.37.0",
     "eslint-plugin-import": "^2.32.0",
     "globals": "^16.4.0",
@@ -31,7 +33,10 @@
     "typescript-eslint": "^8.45.0"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.902.0",
+    "@aws-sdk/util-dynamodb": "^3.902.0",
     "aws-cdk-lib": "2.195.0",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "uuid": "^11.1.0"
   }
 }
