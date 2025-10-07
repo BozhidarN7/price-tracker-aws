@@ -9,7 +9,7 @@ import {
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 
-import { buildResponse } from '../utils';
+import { buildResponse } from '../utils/index.ts';
 
 const client = new DynamoDBClient({});
 const PRODUCTS_TABLE_NAME = process.env.PRODUCTS_TABLE_NAME;

@@ -12,7 +12,7 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   {
-    ignores: ['cdk.out/*'],
+    ignores: ['cdk.out/*', 'dist/*'],
   },
   {
     plugins: {

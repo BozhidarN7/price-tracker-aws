@@ -1,4 +1,3 @@
-import path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
@@ -22,7 +21,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       {
         runtime: lambda.Runtime.NODEJS_22_X,
         handler: 'products.handler',
-        code: lambda.Code.fromAsset(path.join(__dirname, '../lambdas')),
+        code: lambda.Code.fromAsset('dist/lambdas'),
         environment: {
           PRODUCTS_TABLE_NAME: productsTable.tableName,
         },

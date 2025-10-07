@@ -1,11 +1,12 @@
 {
   "name": "price-tracker-aws",
+  "type": "module",
   "version": "0.1.0",
   "bin": {
     "price-tracker-aws": "bin/price-tracker-aws.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
@@ -37,6 +38,6 @@
     "@aws-sdk/util-dynamodb": "^3.902.0",
     "aws-cdk-lib": "2.195.0",
     "constructs": "^10.0.0",
-    "uuid": "^11.1.0"
+    "uuid": "^13.0.0"
   }
 }

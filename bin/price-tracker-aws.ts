@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { PriceTrackerAwsStack } from '../lib/price-tracker-aws-stack';
+import { PriceTrackerAwsStack } from '../src/lib/price-tracker-aws-stack.ts';
 
 const app = new cdk.App();
 new PriceTrackerAwsStack(app, 'PriceTrackerAwsStack', {
