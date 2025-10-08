@@ -4,9 +4,9 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["es2022"],
-    "rootDir": ".", // keep TS source here
-    "outDir": "dist", // compiled JS output
-    "declaration": false, // no need for .d.ts unless publishing a library
+    // "rootDir": ".", // keep TS source here
+    // "outDir": "dist", // compiled JS output
+    // "declaration": false, // no need for .d.ts unless publishing a library
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -16,11 +16,12 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": false,
-    "sourceMap": true, // generates .map files (better debugging)
+    // "sourceMap": true, // generates .map files (better debugging)
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
+    "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true, // do not emit JS files (handled by tsc-watch)
+    "noEmit": true,
     "typeRoots": ["./node_modules/@types"]
   },
   "include": ["src/**/*.ts", "bin/**/*.ts"], // CDK + source

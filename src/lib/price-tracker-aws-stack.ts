@@ -1,8 +1,13 @@
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export class PriceTrackerAwsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -15,13 +20,12 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
 
-    const priceTrackerLambda = new lambda.Function(
+    const priceTrackerLambda = new lambdaNode.NodejsFunction(
       this,
       'PriceTrackerHandler',
       {
-        runtime: lambda.Runtime.NODEJS_22_X,
-        handler: 'products.handler',
-        code: lambda.Code.fromAsset('dist/lambdas'),
+        entry: join(__dirname, '../lambdas/products.ts'),
+        handler: 'handler',
         environment: {
           PRODUCTS_TABLE_NAME: productsTable.tableName,
         },

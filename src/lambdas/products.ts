@@ -6,7 +6,7 @@ import {
   PutItemCommand,
   ScanCommand,
 } from '@aws-sdk/client-dynamodb';
-import { APIGatewayProxyEvent } from 'aws-lambda';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 
 import { buildResponse } from '../utils/index.ts';
