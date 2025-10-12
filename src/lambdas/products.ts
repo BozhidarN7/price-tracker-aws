@@ -15,9 +15,14 @@ const client = new DynamoDBClient({});
 const PRODUCTS_TABLE_NAME = process.env.PRODUCTS_TABLE_NAME;
 
 export const handler = async (event: APIGatewayProxyEvent) => {
-  const { httpMethod, pathParameters, body } = event;
+  const { httpMethod, pathParameters, body, requestContext } = event;
   const productId = pathParameters?.productId;
   const origin = event.headers.origin || event.headers.Origin;
+
+  const userId = requestContext.authorizer?.claims?.sub;
+  if (!userId) {
+    return buildResponse(401, { message: 'Unauthorized' }, origin);
+  }
 
   try {
     if (httpMethod === 'GET' && productId) {
@@ -33,7 +38,9 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       }
 
       const item = unmarshall(res.Item);
-      // TODO: Authentication and authorization
+      if (item.userId !== userId) {
+        return buildResponse(403, { message: 'Forbidden' }, origin);
+      }
 
       return buildResponse(200, item, origin);
     }
@@ -42,8 +49,10 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         new ScanCommand({ TableName: PRODUCTS_TABLE_NAME }),
       );
 
-      // TOOD: Do not forget Auhentication with filter
-      const items = res.Items?.map((item) => unmarshall(item)) ?? [];
+      const items =
+        res.Items?.map((item) => unmarshall(item)).filter(
+          (item) => item.userId === userId,
+        ) ?? [];
 
       return buildResponse(200, items, origin);
     }
@@ -53,7 +62,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       item = {
         id: item.id ?? uuidv4(),
         ...item,
-        // userId, TODO add userID from authentication
+        userId,
       };
 
       await client.send(
@@ -69,8 +78,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     if (httpMethod === 'PUT' && productId && body) {
       const updated = JSON.parse(body);
       updated.id = productId;
-      // TODO: Authentication
-      // updated.userId = userId;
+      updated.userId = userId;
 
       await client.send(
         new PutItemCommand({
@@ -94,11 +102,10 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         return buildResponse(404, { message: 'Product not found' }, origin);
       }
 
-      // TODO: Authentication
-      // const item = unmarshall(res.Item);
-      // if (item.userId !== userId) {
-      //   return buildResponse(403, { message: 'Forbidden' }, origin);
-      // }
+      const item = unmarshall(res.Item);
+      if (item.userId !== userId) {
+        return buildResponse(403, { message: 'Forbidden' }, origin);
+      }
 
       await client.send(
         new DeleteItemCommand({

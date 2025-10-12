@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,6 +35,18 @@ export class PriceTrackerAwsStack extends cdk.Stack {
 
     productsTable.grantReadWriteData(priceTrackerLambda);
 
+    const userPoolId = cdk.Fn.importValue('UserPoolId');
+    const userPool = cognito.UserPool.fromUserPoolId(
+      this,
+      'ImportedUserPool',
+      userPoolId,
+    );
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      'PriceTrackerAuthorizer',
+      { cognitoUserPools: [userPool] },
+    );
+
     const priceTrackerApi = new apigateway.RestApi(this, 'PriceTrackerApi', {
       restApiName: 'Price Tracker Service',
       deployOptions: { stageName: 'prod' },
@@ -43,24 +56,29 @@ export class PriceTrackerAwsStack extends cdk.Stack {
     productsResource.addMethod(
       'GET',
       new apigateway.LambdaIntegration(priceTrackerLambda),
+      { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
     productsResource.addMethod(
       'POST',
       new apigateway.LambdaIntegration(priceTrackerLambda),
+      { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
 
     const productResource = productsResource.addResource('{productId}');
     productResource.addMethod(
       'GET',
       new apigateway.LambdaIntegration(priceTrackerLambda),
+      { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
     productResource.addMethod(
       'PUT',
       new apigateway.LambdaIntegration(priceTrackerLambda),
+      { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
     productResource.addMethod(
       'DELETE',
       new apigateway.LambdaIntegration(priceTrackerLambda),
+      { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
   }
 }
