@@ -33,6 +33,15 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       },
     );
 
+    const userPoolClientId = cdk.Fn.importValue('UserPoolClientId');
+    const signInLambda = new lambdaNode.NodejsFunction(this, 'SignInHandler', {
+      entry: join(__dirname, '../lambdas/sign-in.ts'),
+      handler: 'handler',
+      environment: {
+        COGNITO_CLIENT_ID: userPoolClientId,
+      },
+    });
+
     productsTable.grantReadWriteData(priceTrackerLambda);
 
     const userPoolId = cdk.Fn.importValue('UserPoolId');
@@ -51,6 +60,10 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       restApiName: 'Price Tracker Service',
       deployOptions: { stageName: 'prod' },
     });
+
+    priceTrackerApi.root
+      .addResource('sign-in')
+      .addMethod('POST', new apigateway.LambdaIntegration(signInLambda));
 
     const productsResource = priceTrackerApi.root.addResource('products');
     productsResource.addMethod(
