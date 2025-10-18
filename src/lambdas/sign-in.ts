@@ -88,7 +88,6 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     return buildResponse(400, {
       statusCode: 400,
       message: friendly,
-      clienId: COGNITO_CLIENT_ID,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }

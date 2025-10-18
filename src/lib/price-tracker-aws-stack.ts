@@ -41,6 +41,28 @@ export class PriceTrackerAwsStack extends cdk.Stack {
         COGNITO_CLIENT_ID: userPoolClientId,
       },
     });
+    const respondToChallengeLambda = new lambdaNode.NodejsFunction(
+      this,
+      'RespondToChanllengeHandler',
+      {
+        entry: join(__dirname, '../lambdas/respond-to-challenge.ts'),
+        handler: 'handler',
+        environment: {
+          COGNITO_CLIENT_ID: userPoolClientId,
+        },
+      },
+    );
+    const refreshTokenLambda = new lambdaNode.NodejsFunction(
+      this,
+      'RefreshTokenHandler',
+      {
+        entry: join(__dirname, '../lambdas/refresh-token.ts'),
+        handler: 'handler',
+        environment: {
+          COGNITO_CLIENT_ID: userPoolClientId,
+        },
+      },
+    );
 
     productsTable.grantReadWriteData(priceTrackerLambda);
 
@@ -64,6 +86,15 @@ export class PriceTrackerAwsStack extends cdk.Stack {
     priceTrackerApi.root
       .addResource('sign-in')
       .addMethod('POST', new apigateway.LambdaIntegration(signInLambda));
+    priceTrackerApi.root
+      .addResource('respond-to-challenge')
+      .addMethod(
+        'POST',
+        new apigateway.LambdaIntegration(respondToChallengeLambda),
+      );
+    priceTrackerApi.root
+      .addResource('refresh-token')
+      .addMethod('POST', new apigateway.LambdaIntegration(refreshTokenLambda));
 
     const productsResource = priceTrackerApi.root.addResource('products');
     productsResource.addMethod(
