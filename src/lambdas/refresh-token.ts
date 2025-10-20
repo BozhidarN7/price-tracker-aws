@@ -38,10 +38,9 @@ export const handler = async (event: APIGatewayProxyEvent) => {
   } catch (error: unknown) {
     console.error('Refresh token error:', error);
 
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: 'Failed to refresh tokens' }),
+    return buildResponse(400, {
+      message: 'Failed to refresh tokens',
       error: error instanceof Error ? error.message : 'Unknown error',
-    };
+    });
   }
 };

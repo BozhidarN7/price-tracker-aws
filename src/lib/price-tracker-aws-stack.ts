@@ -63,6 +63,14 @@ export class PriceTrackerAwsStack extends cdk.Stack {
         },
       },
     );
+    const getCognitoUserLambda = new lambdaNode.NodejsFunction(
+      this,
+      'GetCognitoUserHandler',
+      {
+        entry: join(__dirname, '../lambdas/get-user.ts'),
+        handler: 'handler',
+      },
+    );
 
     productsTable.grantReadWriteData(priceTrackerLambda);
 
@@ -83,6 +91,9 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       deployOptions: { stageName: 'prod' },
     });
 
+    priceTrackerApi.root
+      .addResource('get-user')
+      .addMethod('GET', new apigateway.LambdaIntegration(getCognitoUserLambda));
     priceTrackerApi.root
       .addResource('sign-in')
       .addMethod('POST', new apigateway.LambdaIntegration(signInLambda));
