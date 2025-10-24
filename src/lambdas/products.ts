@@ -70,6 +70,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       if (!item.priceHistory || item.priceHistory.length === 0) {
         item.priceHistory = [
           {
+            priceEntryId: uuidv4(),
             date: now,
             price: item.latestPrice,
             currency: item.latestCurrency,
@@ -112,6 +113,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       // If price changed → append new entry to history
       if (updated.latestPrice && updated.latestPrice !== current.latestPrice) {
         const newEntry = {
+          priceEntryId: uuidv4(),
           date: now,
           price: updated.latestPrice,
           currency: updated.latestCurrency || current.latestCurrency,

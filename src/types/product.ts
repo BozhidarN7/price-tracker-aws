@@ -1,6 +1,7 @@
 import { CURRENCIES_SYMBOLS_MAP, TRENDS } from '../constants/index.ts';
 
 export type PriceEntry = {
+  priceEntryId: string;
   date: string;
   store?: string;
   location?: {
