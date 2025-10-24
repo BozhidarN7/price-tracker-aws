@@ -16,7 +16,7 @@ export type Product = {
   userId: string;
   name: string;
   brand?: string;
-  category?: string;
+  category: string;
   description?: string;
   imageUrl?: string;
 
