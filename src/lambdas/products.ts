@@ -93,7 +93,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       return buildResponse(201, item, origin);
     }
 
-    if (httpMethod === 'PUT' && productId && body) {
+    if (httpMethod === 'PATCH' && productId && body) {
       const updated = JSON.parse(body);
       const now = new Date().toISOString();
 
@@ -101,7 +101,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       const existing = await client.send(
         new GetItemCommand({
           TableName: PRODUCTS_TABLE_NAME,
-          Key: marshall({ id: productId, userId }),
+          Key: marshall({ id: productId }),
         }),
       );
 

@@ -126,7 +126,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
     productResource.addMethod(
-      'PUT',
+      'PATCH',
       new apigateway.LambdaIntegration(priceTrackerLambda),
       { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
