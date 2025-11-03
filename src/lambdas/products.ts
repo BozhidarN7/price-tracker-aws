@@ -115,19 +115,31 @@ export const handler = async (event: APIGatewayProxyEvent) => {
       if (updated.latestPrice && updated.latestPrice !== current.latestPrice) {
         const newEntry = {
           priceEntryId: uuidv4(),
-          date: now,
+          date: updated.latestPurchaseDate || now,
           price: updated.latestPrice,
           currency: updated.latestCurrency || current.latestCurrency,
-          store: updated.store || current.store || 'Unknown',
+          store: updated.latestStore || current.latestStore || 'Unknown',
         };
         current.priceHistory = [...(current.priceHistory || []), newEntry];
       }
 
       // Merge updates
-      const merged = {
+      let merged = {
         ...current,
         ...updated,
         updatedAt: now,
+      };
+
+      // by Date, latest first
+      const sortedPriceEntires = [...merged.priceHistory].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+      merged = {
+        ...merged,
+        latestPrice: sortedPriceEntires[0].price,
+        latestCurrency: sortedPriceEntires[0].currency,
+        latestStore: sortedPriceEntires[0].store,
+        latestDate: sortedPriceEntires[0].date,
       };
 
       const analytics = computeTendencyMetrics(merged.priceHistory || []);
