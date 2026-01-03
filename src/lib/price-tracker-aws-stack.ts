@@ -43,6 +43,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       {
         entry: join(__dirname, '../lambdas/products.ts'),
         handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
         environment: {
           PRODUCTS_TABLE_NAME: productsTable.tableName,
         },
@@ -54,7 +55,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       {
         entry: join(__dirname, '../lambdas/analyze-image-receipt.ts'),
         handler: 'handler',
-        runtime: Runtime.NODEJS_LATEST,
+        runtime: Runtime.NODEJS_22_X,
         environment: {
           RECEIPTS_BUCKET: receiptsBucket.bucketName,
         },
@@ -86,6 +87,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
     const signInLambda = new lambdaNode.NodejsFunction(this, 'SignInHandler', {
       entry: join(__dirname, '../lambdas/sign-in.ts'),
       handler: 'handler',
+      runtime: Runtime.NODEJS_22_X,
       environment: {
         COGNITO_CLIENT_ID: userPoolClientId,
       },
@@ -96,6 +98,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       {
         entry: join(__dirname, '../lambdas/respond-to-challenge.ts'),
         handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
         environment: {
           COGNITO_CLIENT_ID: userPoolClientId,
         },
@@ -107,6 +110,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       {
         entry: join(__dirname, '../lambdas/refresh-token.ts'),
         handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
         environment: {
           COGNITO_CLIENT_ID: userPoolClientId,
         },
@@ -118,6 +122,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       {
         entry: join(__dirname, '../lambdas/get-user.ts'),
         handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
       },
     );
 
