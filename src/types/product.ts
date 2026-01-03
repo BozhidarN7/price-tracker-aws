@@ -38,3 +38,16 @@ export type Product = {
   updatedAt: string;
   ocrRawText?: string; // Raw OCR output for debugging
 };
+
+export type AIProduct = {
+  name: string;
+  price: number;
+  brand: string | null;
+};
+
+export type AIResult = {
+  store: string | null;
+  currency: keyof typeof CURRENCIES_SYMBOLS_MAP;
+  purchaseDate: string;
+  products: AIProduct[];
+};

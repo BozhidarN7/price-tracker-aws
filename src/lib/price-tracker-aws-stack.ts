@@ -5,7 +5,15 @@ import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as iam from 'aws-cdk-lib/aws-iam';
+
+import {
+  BlockPublicAccess,
+  Bucket,
+  BucketEncryption,
+} from 'aws-cdk-lib/aws-s3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +29,14 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
 
+    const receiptsBucket = new Bucket(this, 'ReceiptsBucket', {
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      encryption: BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      lifecycleRules: [{ expiration: cdk.Duration.days(5) }],
+    });
+
     const priceTrackerLambda = new lambdaNode.NodejsFunction(
       this,
       'PriceTrackerHandler',
@@ -32,6 +48,39 @@ export class PriceTrackerAwsStack extends cdk.Stack {
         },
       },
     );
+    const analyzeImageReceiptLambda = new lambdaNode.NodejsFunction(
+      this,
+      'AnalyzeImageReceiptHandler',
+      {
+        entry: join(__dirname, '../lambdas/analyze-image-receipt.ts'),
+        handler: 'handler',
+        runtime: Runtime.NODEJS_LATEST,
+        environment: {
+          RECEIPTS_BUCKET: receiptsBucket.bucketName,
+        },
+        timeout: cdk.Duration.seconds(25),
+      },
+    );
+    analyzeImageReceiptLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['textract:DetectDocumentText'],
+        resources: ['*'],
+      }),
+    );
+    analyzeImageReceiptLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'bedrock:InvokeModel',
+          'aws-marketplace:ViewSubscriptions',
+          'aws-marketplace:Subscribe',
+        ],
+        resources: ['*'],
+      }),
+    );
+
+    receiptsBucket.grantPut(analyzeImageReceiptLambda);
 
     const userPoolClientId = cdk.Fn.importValue('UserPoolClientId');
     const signInLambda = new lambdaNode.NodejsFunction(this, 'SignInHandler', {
@@ -88,6 +137,7 @@ export class PriceTrackerAwsStack extends cdk.Stack {
 
     const priceTrackerApi = new apigateway.RestApi(this, 'PriceTrackerApi', {
       restApiName: 'Price Tracker Service',
+      binaryMediaTypes: ['image/jpeg', 'image/png', 'multipart/form-data'],
       deployOptions: { stageName: 'prod' },
     });
 
@@ -135,5 +185,16 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       new apigateway.LambdaIntegration(priceTrackerLambda),
       { authorizationType: apigateway.AuthorizationType.COGNITO, authorizer },
     );
+
+    priceTrackerApi.root
+      .addResource('analyze-receipt')
+      .addMethod(
+        'POST',
+        new apigateway.LambdaIntegration(analyzeImageReceiptLambda),
+        {
+          authorizationType: apigateway.AuthorizationType.COGNITO,
+          authorizer,
+        },
+      );
   }
 }
