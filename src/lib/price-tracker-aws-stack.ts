@@ -28,6 +28,18 @@ export class PriceTrackerAwsStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
+    productsTable.addGlobalSecondaryIndex({
+      indexName: 'UserFingerprintIndex',
+      partitionKey: {
+        name: 'userId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'productFingerprint',
+        type: dynamodb.AttributeType.STRING,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
 
     const receiptsBucket = new Bucket(this, 'ReceiptsBucket', {
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,

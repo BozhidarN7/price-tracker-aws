@@ -4,6 +4,7 @@ import {
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
+  QueryCommand,
   ScanCommand,
 } from '@aws-sdk/client-dynamodb';
 import type { APIGatewayProxyEvent } from 'aws-lambda';
@@ -11,6 +12,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 
 import { buildResponse, computeTendencyMetrics } from '../utils/index.ts';
 import { formatDate } from '../utils/convert-dates.ts';
+import buildProductFingerprint from '../utils/products/build-product-fingerprint.ts';
 
 const client = new DynamoDBClient({});
 const PRODUCTS_TABLE_NAME = process.env.PRODUCTS_TABLE_NAME;
@@ -59,38 +61,98 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     }
 
     if (httpMethod === 'POST' && body) {
-      let item = JSON.parse(body);
+      const items = JSON.parse(body); // expect array
       const now = new Date().toISOString();
 
-      item.id = item.id ?? uuidv4();
-      item.userId = userId;
-      item.createdAt = item.createdAt ?? now;
-      item.updatedAt = now;
-
-      // Initialize price history if missing
-      if (!item.priceHistory || item.priceHistory.length === 0) {
-        item.priceHistory = [
-          {
-            priceEntryId: uuidv4(),
-            date: formatDate(now),
-            price: item.latestPrice,
-            currency: item.latestCurrency,
-            store: item.store,
-          },
-        ];
+      if (!Array.isArray(items)) {
+        return buildResponse(
+          400,
+          { message: 'Expected array of products' },
+          origin,
+        );
       }
 
-      const analytics = computeTendencyMetrics(item.priceHistory);
-      item = { ...item, ...analytics };
+      const savedProducts = [];
 
-      await client.send(
-        new PutItemCommand({
-          TableName: PRODUCTS_TABLE_NAME,
-          Item: marshall(item),
-        }),
-      );
+      for (const rawItem of items) {
+        const fingerprint = buildProductFingerprint({
+          name: rawItem.name,
+          brand: rawItem.brand,
+          category: rawItem.category,
+          variant: rawItem.variant,
+        });
 
-      return buildResponse(201, item, origin);
+        // 1. Try to find existing product
+        const existing = await findProductByFingerprint({
+          userId,
+          fingerprint,
+        });
+
+        // 2. Build new price entry
+        const priceEntry = {
+          priceEntryId: uuidv4(),
+          date: rawItem.latestPurchaseDate ?? formatDate(now),
+          price: rawItem.latestPrice,
+          currency: rawItem.latestCurrency,
+          store: rawItem.latestStore,
+        };
+
+        let product;
+
+        if (existing) {
+          // ─── UPDATE EXISTING PRODUCT ───
+          product = {
+            ...existing,
+            priceHistory: [...existing.priceHistory, priceEntry],
+            latestPrice: rawItem.latestPrice,
+            latestCurrency: rawItem.latestCurrency,
+            latestStore: rawItem.latestStore,
+            latestPurchaseDate: priceEntry.date,
+            updatedAt: now,
+          };
+        } else {
+          // ─── CREATE NEW PRODUCT ───
+          product = {
+            id: uuidv4(),
+            userId,
+            name: rawItem.name,
+            brand: rawItem.brand,
+            category: rawItem.category ?? 'uncategorized',
+            description: rawItem.description,
+            imageUrl: rawItem.imageUrl,
+
+            productFingerprint: fingerprint,
+
+            latestPrice: rawItem.latestPrice,
+            latestCurrency: rawItem.latestCurrency,
+            latestStore: rawItem.latestStore,
+            latestPurchaseDate: priceEntry.date,
+
+            priceHistory: [priceEntry],
+
+            createdAt: now,
+            updatedAt: now,
+
+            ocrRawText: rawItem.ocrRawText,
+          };
+        }
+
+        // 3. Compute analytics
+        const analytics = computeTendencyMetrics(product.priceHistory);
+        product = { ...product, ...analytics };
+
+        // 4. Save (Put is OK because id is stable)
+        await client.send(
+          new PutItemCommand({
+            TableName: PRODUCTS_TABLE_NAME,
+            Item: marshall(product, { removeUndefinedValues: true }),
+          }),
+        );
+
+        savedProducts.push(product);
+      }
+
+      return buildResponse(201, savedProducts, origin);
     }
 
     if (httpMethod === 'PATCH' && productId && body) {
@@ -193,3 +255,27 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     return buildResponse(500, { error: (err as Error).message }, origin);
   }
 };
+
+async function findProductByFingerprint({
+  userId,
+  fingerprint,
+}: {
+  userId: string;
+  fingerprint: string;
+}) {
+  const result = await client.send(
+    new QueryCommand({
+      TableName: PRODUCTS_TABLE_NAME,
+      IndexName: 'UserFingerprintIndex',
+      KeyConditionExpression: 'userId = :uid AND productFingerprint = :fp',
+      ExpressionAttributeValues: marshall({
+        ':uid': userId,
+        ':fp': fingerprint,
+      }),
+      Limit: 1,
+    }),
+  );
+
+  if (!result.Items || result.Items.length === 0) return null;
+  return unmarshall(result.Items[0]);
+}
