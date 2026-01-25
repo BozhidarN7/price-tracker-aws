@@ -77,34 +77,71 @@ const extractJson = (text: string) => {
 
 const buildPrompt = (ocrText: string): string => {
   return `
-You are a system that extracts structured data from OCR text.
+You are a data extraction system.
 
-The input text comes from a supermarket receipt.
-The text may contain:
-- totals
-- VAT
-- card payment info
-- legal text
-- random characters
-- Bulgarian or English language
+The input is OCR text from a supermarket receipt.
+The text may contain irrelevant information such as totals, VAT, legal text, payment details, or random characters.
+The receipt may be in Bulgarian or English.
 
 Your task:
-Extract ONLY purchased products.
+Extract ONLY purchased products and normalize their prices.
 
-Rules:
-- Ignore totals, subtotals, VAT, discounts
-- Ignore receipt metadata
-- Do NOT guess missing values
-- Do NOT invent products
-- Prices must be numeric
-- Currency must be inferred only if explicitly present
+STRICT RULES (follow all):
+- Extract ONLY real purchased products listed on the receipt
+- Ignore totals, subtotals, VAT, discounts, loyalty info, card info, and legal text
+- Do NOT guess or infer products that are not clearly present
+- Do NOT invent missing values
+- If a value is not explicitly present, return null
+- Return STRICT JSON ONLY (no markdown, no comments, no explanations)
 
-Return STRICT JSON ONLY.
-Do not include explanations.
-Do not include markdown.
-Do not include comments.
+PRICE NORMALIZATION RULES:
+- If a product is sold by weight (kg, g):
+  - Convert the price to price per 1 kilogram (kg)
+- If a product is sold by volume (l, ml):
+  - Convert the price to price per 1 liter (l)
+- If a product is sold per unit:
+  - Return the price for exactly ONE unit
+- If multiple units are purchased together (e.g. "2 avocados for 2.00"):
+  - Divide the total price by the quantity
+  - Return the price for ONE unit
+- If the unit or quantity cannot be confidently determined:
+  - Do NOT calculate
+  - Return the price as null
 
-Schema:
+CURRENCY RULES:
+- Use currency ONLY if explicitly present in the text
+- If currency is not explicit, return null
+
+CATEGORY RULES:
+- Each product MUST be assigned exactly ONE category
+- Choose the closest matching category from the list below
+- If no category clearly matches, use "Other"
+
+ALLOWED CATEGORIES:
+- Groceries
+- Beverages
+- Dairy
+- Snacks
+- Dining & Takeaway
+- Household
+- Cleaning Supplies
+- Personal Care
+- Health & Pharmacy
+- Electronics
+- Appliances
+- Clothing & Accessories
+- Transport
+- Fuel
+- Entertainment
+- Subscriptions
+- Pets
+- Baby & Kids
+- Home & Garden
+- Office & Stationery
+- Gifts
+- Other
+
+OUTPUT SCHEMA (STRICT):
 {
   "store": string | null,
   "currency": "BGN" | "EUR" | null,
@@ -113,7 +150,9 @@ Schema:
     {
       "name": string,
       "brand": string | null,
-      "price": number
+      "category": string,
+      "price": number | null,
+      "unit": "kg" | "l" | "unit" | null
     }
   ]
 }
