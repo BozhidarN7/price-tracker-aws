@@ -15,7 +15,7 @@ export default async function parseWithBedrock(
 
   const response = await bedrock.send(
     new InvokeModelCommand({
-      modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+      modelId: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0',
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify({
